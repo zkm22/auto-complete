@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "moduleResolution": "node",
+    "target": "esnext",
+    "module": "esnext",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "importHelpers": true,
+    "noEmitHelpers": true,
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react",
+    "isolatedModules": false,
+    "declaration": true,
+    "declarationDir": "build/types",
+    "emitDeclarationOnly": false,
+    "outDir": "build/lib"
+  },
+  "include": [
+    "src/index.tsx"
+  ],
+  "exclude": [
+    "src/*.test.tsx"
+  ],
+}
