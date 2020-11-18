@@ -1,9 +1,19 @@
-import React from 'react';
+import React, {CSSProperties} from 'react';
 import {from, Observable, Subject, Subscription} from 'rxjs';
-import { debounceTime, takeUntil, tap, switchMap } from 'rxjs/operators';
+import { debounceTime, takeUntil, tap, switchMap, filter } from 'rxjs/operators';
+import './index.css';
 
+interface ACStyle extends CSSProperties {
+  '--width'?: string;
+  '--font-size': string;
+}
+const defaultVars: ACStyle = {
+  '--font-size': '16px',
+  '--width': '120px',
+}
 interface Props {
   source: (str: string) => Promise<string[]>;
+  width?: string;
 }
 interface State {
   inputValue: string;
@@ -27,20 +37,16 @@ export class AutoComplete extends React.Component<Props, State> {
     };
     this.subscription = this.getAutoSearch().subscribe();
   }
-
-  // 更新 Input 框中的搜索词
   setSearchStr: (str: string) => void = (str) => {
     this.setState({
       inputValue: str,
     });
   };
-  // 更新搜索状态
   setLoading: (isLoading: boolean) => void = (isLoading) => {
     this.setState({
       isLoading,
     });
   };
-  // 显示或隐藏警告信息
   toggleWarning: (isShown?: boolean) => void = (isShown) => {
     if (isShown !== undefined) {
       this.setState({
@@ -54,45 +60,72 @@ export class AutoComplete extends React.Component<Props, State> {
       );
     }
   };
-  // 发送请求，获取搜索结果
   searchQuery: (str: string) => Observable<string[]> = (str) => {
     return from(this.props.source(str));
   };
-  // 更新搜索结果列表
   setSearchResults: (options: string[]) => void = (options) => {
     this.setState({
       searchResults: options
     });
   };
-
-  // 你要实现的方法
   getAutoSearch = () => {
     const search$ = this.payload$.pipe(
-      tap(console.log),
+      filter((str) => {
+        if (str.length > 30 || str.length === 0) {
+          this.toggleWarning(true);
+          return false;
+        }
+        this.toggleWarning(false);
+        this.setSearchStr(str);
+        return true;
+      }),
+      debounceTime(500),
       switchMap(
         (str) => this.searchQuery(str).pipe(
           takeUntil(this.payload$),
-          debounceTime(500),
           tap((options) => {
             this.setSearchResults(options);
           })
         )
       )
     );
-
     return search$;
   }
-
+  handleOptionClick = (option: string) => {
+    this.setSearchStr(option);
+    window.setTimeout(() => {
+      this.setState({
+        searchResults: [],
+      });
+    }, 100);
+  }
   handleInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     this.payload$.next(e.currentTarget.value);
   }
+  componentWillUnmount () {
+    this.payload$.unsubscribe()
+  }
   render() {
     return (
-      <div className="auto-complete">
-        <input className="input" onInput={this.handleInput} />
-        <div className="options">
+      <div
+        className="__auto-complete"
+        style={{
+          '--font-size': defaultVars['--font-size'],
+          '--width': this.props.width || defaultVars['--width'],
+        } as ACStyle}>
+        <input className="input" onInput={this.handleInput} value={this.state.inputValue} />
+        {this.state.warningShow&&<span className="warning">超出30个字符</span>}
+        <div
+          className="options"
+          style={{
+            height: `calc(${this.state.searchResults.length} * var(--font-size))`
+          }}
+          >
           {this.state.searchResults.map(option => (
-            <div className="option">{option}</div>
+            <div
+              className="option"
+              key={option}
+              onClick={()=>this.handleOptionClick(option)}>{option}</div>
           ))}
         </div>
       </div>
