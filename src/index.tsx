@@ -72,9 +72,11 @@ export class AutoComplete extends React.Component<Props, State> {
     const search$ = this.payload$.pipe(
       filter((str) => {
         if (str.length > 30 || str.length === 0) {
+          this.setLoading(false);
           this.toggleWarning(true);
           return false;
         }
+        this.setLoading(true);
         this.toggleWarning(false);
         this.setSearchStr(str);
         return true;
@@ -84,6 +86,7 @@ export class AutoComplete extends React.Component<Props, State> {
         (str) => this.searchQuery(str).pipe(
           takeUntil(this.payload$),
           tap((options) => {
+            this.setLoading(false);
             this.setSearchResults(options);
           })
         )
